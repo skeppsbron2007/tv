@@ -3,7 +3,7 @@ name: Fetch News
 on:
   schedule:
     - cron: '*/15 * * * *'
-  workflow_dispatch: # pozwala odpalić ręcznie
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,7 +16,7 @@ jobs:
       - name: Pobierz kod repozytorium
         uses: actions/checkout@v4
         with:
-          ref: main # Zapobiega stanowi detached HEAD
+          ref: main
           fetch-depth: 0
 
       - name: Uruchom skrypt pobierający newsy
@@ -29,14 +29,13 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Dodaj folder z danymi (ignoruj jeśli jeszcze nie powstał)
-          git add rawdata/ 2>/dev/null || true
+          # 1. Dodaj wszystkie zmiany (w tym uprawnienia do skryptu i nowe pliki w rawdata)
+          git add -A
 
-          # Sprawdź czy są jakiekolwiek zmiany do zapisania
+          # 2. Jeśli są nowe pliki, zatwierdź i wyślij do repozytorium
           if git diff --staged --quiet; then
             echo "Brak nowych newsów. Kończę zadanie."
           else
             git commit -m "Auto: dodano nowe newsy [skip ci]"
-            git pull --rebase origin main
-            git push origin HEAD:main
+            git push origin main
           fi
