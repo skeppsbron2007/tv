@@ -2,6 +2,7 @@ name: Fetch News
 
 on:
   schedule:
+    # Uruchamia się co 15 minut (w 7, 22, 37 i 52 minucie każdej godziny czasu UTC)
     - cron: '7,22,37,52 * * * *'
   workflow_dispatch:
 
@@ -21,21 +22,24 @@ jobs:
 
       - name: Uruchom skrypt pobierający newsy
         run: |
-          chmod +x ./scripts/fetch_news.sh
-          ./scripts/fetch_news.sh
+          # Zamiast chmod +x, bezpieczniej uruchomić skrypt bezpośrednio przez powłokę bash
+          # Dzięki temu nie modyfikujesz uprawnień plików wewnątrz gita
+          bash ./scripts/fetch_news.sh
 
       - name: Zapisz zmiany w repozytorium (Git Commit & Push)
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # 1. Dodaj wszystkie zmiany (w tym uprawnienia do skryptu i nowe pliki w rawdata)
+          # Dodaj tylko nowe/zmienione pliki z newsami (np. katalog rawdata)
+          # Jeśli skrypt tworzy pliki w konkretnym folderze, lepiej wskazać go wprost, np. git add rawdata/
           git add -A
 
-          # 2. Jeśli są nowe pliki, zatwierdź i wyślij do repozytorium
+          # Sprawdź czy są faktyczne zmiany w plikach
           if git diff --staged --quiet; then
             echo "Brak nowych newsów. Kończę zadanie."
           else
-            git commit -m "Auto: dodano nowe newsy [skip ci]"
+            # USUNIĘTO [skip ci] - teraz cron nie zostanie zablokowany
+            git commit -m "Auto: dodano nowe newsy"
             git push origin main
           fi
