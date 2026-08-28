@@ -1,0 +1,40 @@
+name: Fetch TradingView News
+
+on:
+  schedule:
+    # Uruchamiaj co 15 minut
+    - cron: '*/15 * * * *'
+  workflow_dispatch: # Przycisk w panelu do ręcznego uruchomienia w dowolnym momencie
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-and-save:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Pobierz kod repozytorium
+        uses: actions/checkout@v4
+
+      - name: Uruchom skrypt pobierający newsy
+        run: |
+          chmod +x ./scripts/fetch_news.sh
+          ./scripts/fetch_news.sh
+
+      - name: Zapisz zmiany w repozytorium (Git Commit & Push)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          # Dodaj katalog z danymi do Gita
+          git add rawdata/
+
+          # Sprawdź, czy pojawiły się nowe pliki
+          if git diff --staged --quiet; then
+            echo "Brak nowych newsów. Nic do zapisania."
+          else
+            git commit -m "Auto: dodano nowe newsy [skip ci]"
+            git pull --rebase
+            git push
+          fi
