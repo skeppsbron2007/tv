@@ -1,10 +1,9 @@
-name: Fetch TradingView News
+name: Fetch News
 
 on:
   schedule:
-    # Uruchamiaj co 15 minut
     - cron: '*/15 * * * *'
-  workflow_dispatch: # Przycisk w panelu do ręcznego uruchomienia w dowolnym momencie
+  workflow_dispatch: # pozwala odpalić ręcznie
 
 permissions:
   contents: write
@@ -16,6 +15,9 @@ jobs:
     steps:
       - name: Pobierz kod repozytorium
         uses: actions/checkout@v4
+        with:
+          ref: main # Zapobiega stanowi detached HEAD
+          fetch-depth: 0
 
       - name: Uruchom skrypt pobierający newsy
         run: |
@@ -27,14 +29,14 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
 
-          # Dodaj katalog z danymi do Gita
-          git add rawdata/
+          # Dodaj folder z danymi (ignoruj jeśli jeszcze nie powstał)
+          git add rawdata/ 2>/dev/null || true
 
-          # Sprawdź, czy pojawiły się nowe pliki
+          # Sprawdź czy są jakiekolwiek zmiany do zapisania
           if git diff --staged --quiet; then
-            echo "Brak nowych newsów. Nic do zapisania."
+            echo "Brak nowych newsów. Kończę zadanie."
           else
             git commit -m "Auto: dodano nowe newsy [skip ci]"
-            git pull --rebase
-            git push
+            git pull --rebase origin main
+            git push origin HEAD:main
           fi
